@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EduScholar Portal — Smart Scholarship Matching</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tesseract.js for OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+  <!-- pdf.js (for rendering PDF pages into canvas before OCR) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #818cf8;
+      --secondary: #10b981;
+      --accent: #f59e0b;
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --text-primary: #0f172a;
+      --text-secondary: #64748b;
+      --text-muted: #94a3b8;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      --radius: 12px;
+      --radius-lg: 16px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-main);
+      color: var(--text-primary);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Header & Navigation */
+    .header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 2rem;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 800;
+      font-size: 1.25rem;
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.5rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    .nav-btn {
+      padding: 0.625rem 1.25rem;
+      border-radius: 8px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+
+    .nav-btn:hover {
+      background: var(--border-light);
+      color: var(--text-primary);
+    }
+
+    .nav-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      border-radius: var(--radius-lg);
+      padding: 3rem 2.5rem;
+      margin-bottom: 2rem;
+      color: white;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+      transform: translate(30%, -30%);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+      font-weight: 800;
+      margin-bottom: 0.75rem;
+      line-height: 1.2;
+    }
+
+    .hero p {
+      font-size: 1.125rem;
+      opacity: 0.95;
+      max-width: 700px;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-stats {
+      display: flex;
+      gap: 3rem;
+      margin-top: 2rem;
+    }
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    /* Tab System */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 2rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0;
+    }
+
+    .tab {
+      padding: 1rem 2rem;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+      font-size: 1rem;
+    }
+
+    .tab:hover {
+      color: var(--text-primary);
+    }
+
+    .tab.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Card Styles */
+    .card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .card-subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Grid Layouts */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 400px 1fr;
+      gap: 2rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* Form Elements */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-label {
+      display: block;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+      background: var(--bg-card);
+      color: var(--text-primary);
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+    }
+
+    .form-helper {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.375rem;
+    }
+
+    /* File Upload */
+    .file-upload {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--border-light);
+    }
+
+    .file-upload:hover {
+      border-color: var(--primary);
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    .file-upload.active {
+      border-color: var(--secondary);
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .file-upload-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      font-size: 0.95rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1.5px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--border-light);
+      border-color: var(--primary);
+    }
+
+    .btn-success {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #059669;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    /* Scholarship Cards */
+    .scholarship-card {
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      border: 1.5px solid var(--border);
+      transition: all 0.2s;
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .scholarship-card:hover {
+      border-color: var(--primary);
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .scholarship-content {
+      flex: 1;
+    }
+
+    .scholarship-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      gap: 1rem;
+    }
+
+    .scholarship-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .scholarship-provider {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .scholarship-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1rem;
+    }
+
+    .meta-tag {
+      padding: 0.375rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      background: var(--border-light);
+      color: var(--text-secondary);
+    }
+
+    .scholarship-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1rem;
+    }
+
+    .match-badge {
+      background: linear-gradient(135deg, var(--primary), var(--primary-light));
+      color: white;
+      padding: 0.5rem 1.25rem;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 1.125rem;
+      box-shadow: var(--shadow);
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .match-badge.high {
+      background: linear-gradient(135deg, var(--secondary), #34d399);
+    }
+
+    .match-badge.medium {
+      background: linear-gradient(135deg, var(--accent), #fbbf24);
+    }
+
+    /* Detection Status */
+    .detection-box {
+      background: var(--border-light);
+      border-radius: var(--radius);
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .detection-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detection-item:last-child {
+      border-bottom: none;
+    }
+
+    .detection-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .detection-value {
+      font-weight: 700;
+      color: var(--text-primary);
+      font-size: 1rem;
+    }
+
+    /* Progress & Loading */
+    .progress-container {
+      margin: 1.5rem 0;
+    }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--border-light);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      transition: width 0.3s;
+    }
+
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Filter Panel */
+    .filter-panel {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      flex-wrap: wrap;
+      padding: 1.25rem;
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-label {
+      font-weight: 600;
+      color: var(--text-primary);
+      font-size: 0.9rem;
+    }
+
+    .filter-select {
+      padding: 0.625rem 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      background: var(--bg-card);
+      cursor: pointer;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      padding: 1.5rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .stat-card-icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1rem;
+      font-size: 1.5rem;
+    }
+
+    .stat-card-value {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-card-label {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    /* Alert Boxes */
+    .alert {
+      padding: 1rem 1.25rem;
+      border-radius: var(--radius);
+      margin-bottom: 1.5rem;
+      border-left: 4px solid;
+    }
+
+    .alert-info {
+      background: rgba(99, 102, 241, 0.1);
+      border-color: var(--primary);
+      color: var(--primary-dark);
+    }
+
+    .alert-success {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: var(--secondary);
+      color: #065f46;
+    }
+
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: var(--accent);
+      color: #92400e;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+      
+      .hero-stats {
+        flex-wrap: wrap;
+        gap: 2rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .nav-container {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .hero {
+        padding: 2rem 1.5rem;
+      }
+
+      .hero h1 {
+        font-size: 1.75rem;
+      }
+
+      .hero p {
+        font-size: 1rem;
+      }
+
+      .tabs {
+        overflow-x: auto;
+      }
+
+      .scholarship-card {
+        flex-direction: column;
+      }
+
+      .scholarship-actions {
+        flex-direction: row;
+        justify-content: space-between;
+        width: 100%;
+      }
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .empty-state-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-state-description {
+      font-size: 1rem;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <nav class="nav-container">
+      <a href="#" class="logo">
+        <div class="logo-icon">🎓</div>
+        <span>EduScholar Portal</span>
+      </a>
+      <div class="nav-links">
+        <button class="nav-btn active" onclick="switchView('student')">Student Portal</button>
+        <button class="nav-btn" onclick="switchView('staff')">Staff Dashboard</button>
+        <button class="nav-btn" onclick="showAbout()">About</button>
+      </div>
+    </nav>
+  </header>
+
+  <div class="container">
+    <!-- Hero Section -->
+    <div class="hero">
+      <div class="hero-content">
+        <h1>Find Your Perfect Scholarship Match</h1>
+        <p>AI-powered scholarship matching with OCR document verification. Upload your documents and let our smart algorithm find the best opportunities for you.</p>
+        <div class="hero-stats">
+          <div class="stat-item">
+            <div class="stat-number">25+</div>
+            <div class="stat-label">Active Scholarships</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">98%</div>
+            <div class="stat-label">Match Accuracy</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-number">OCR</div>
+            <div class="stat-label">Document Scanning</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Student View -->
+    <div id="studentView">
+      <div class="grid-2">
+        <!-- Left Panel: Student Profile -->
+        <div>
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Student Profile</div>
+                <div class="card-subtitle">Complete your profile for better matches</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input id="name" type="text" class="form-input" placeholder="Enter your full name" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Education Level</label>
+              <select id="grade" class="form-select">
+                <option value="">Select education level</option>
+                <option value="11">Grade 11</option>
+                <option value="12">Grade 12</option>
+                <option value="UG">Undergraduate</option>
+                <option value="PG">Postgraduate</option>
+                <option value="PhD">PhD</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">CGPA / Percentage</label>
+              <input id="cgpa" type="number" class="form-input" min="0" max="100" step="0.01" placeholder="e.g., 8.5 or 75" />
+              <div class="form-helper">Enter your current CGPA or percentage</div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Field of Study</label>
+              <select id="field" class="form-select">
+                <option value="">Select field</option>
+                <option value="engineering">Engineering</option>
+                <option value="medical">Medical</option>
+                <option value="science">Science</option>
+                <option value="arts">Arts & Humanities</option>
+                <option value="commerce">Commerce</option>
+                <option value="management">Management</option>
+                <option value="law">Law</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <select id="gender" class="form-select">
+                <option value="">Select gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Annual Family Income</label>
+              <select id="income" class="form-select">
+                <option value="">Select income range</option>
+                <option value="below50000">Below ₹50,000</option>
+                <option value="50000-100000">₹50,000 - ₹1,00,000</option>
+                <option value="100000-500000">₹1,00,000 - ₹5,00,000</option>
+                <option value="above500000">Above ₹5,00,000</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">First Graduate in Family?</label>
+              <select id="firstGrad" class="form-select">
+                <option value="">Select option</option>
+                <option value="yes">Yes</option>
+                <option value="no">No</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Document Upload Section -->
+          <div class="card" style="margin-top: 1.5rem;">
+            <div class="card-header">
+              <div>
+                <div class="card-title">Document Upload & Verification</div>
+                <div class="card-subtitle">Upload documents for automatic verification</div>
+              </div>
+            </div>
+
+            <div class="alert alert-info">
+              <strong>Smart OCR Detection:</strong> Our AI will automatically extract community status, income details, and first-graduate status from your documents.
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Aadhaar / ID Card</label>
+              <div class="file-upload" onclick="document.getElementById('aadhaarFile').click()">
+                <div class="file-upload-icon">📄</div>
+                <div><strong>Click to upload</strong> or drag and drop</div>
+                <div class="form-helper">PDF, JPG, PNG up to 10MB</div>
+              </div>
+              <input id="aadhaarFile" type="file" class="file-input" accept="image/*,application/pdf" onchange="handleFileSelect(this, 'aadhaar')" />
+              <div id="aadhaarStatus" class="form-helper" style="margin-top: 0.5rem;"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Income Certificate</label>
+              <div class="file-upload" onclick="document.getElementById('incomeFile').click()">
+                <div class="file-upload-icon">💰</div>
+                <div><strong>Click to upload</strong> or drag and drop</div>
+                <div class="form-helper">PDF, JPG, PNG up to 10MB</div>
+              </div>
+              <input id="incomeFile" type="file" class="file-input" accept="image/*,application/pdf" onchange="handleFileSelect(this, 'income')" />
+              <div id="incomeStatus" class="form-helper" style="margin-top: 0.5rem;"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Community / Caste Certificate</label>
+              <div class="file-upload" onclick="document.getElementById('communityFile').click()">
+                <div class="file-upload-icon">📋</div>
+                <div><strong>Click to upload</strong> or drag and drop</div>
+                <div class="form-helper">PDF, JPG, PNG up to 10MB</div>
+              </div>
+              <input id="communityFile" type="file" class="file-input" accept="image/*,application/pdf" onchange="handleFileSelect(this, 'community')" />
+              <div id="communityStatus" class="form-helper" style="margin-top: 0.5rem;"></div>
+            </div>
+
+            <div class="btn-group">
+              <button class="btn btn-primary" onclick="scanAndMatch()">
+                <span>🔍</span> Scan Documents & Find Matches
+              </button>
+              <button class="btn btn-secondary" onclick="resetAll()">Reset Form</button>
+            </div>
+
+            <!-- Detection Results -->
+            <div class="detection-box" id="detectionResults" style="display: none;">
+              <strong style="display: block; margin-bottom: 0.75rem; color: var(--text-primary);">📊 Detected Information</strong>
+              <div class="detection-item">
+                <span class="detection-label">Community Status:</span>
+                <span class="detection-value" id="detectedCommunity">—</span>
+              </div>
+              <div class="detection-item">
+                <span class="detection-label">Annual Income:</span>
+                <span class="detection-value" id="detectedIncome">—</span>
+              </div>
+              <div class="detection-item">
+                <span class="detection-label">First Graduate:</span>
+                <span class="detection-value" id="detectedFirstGrad">—</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Panel: Scholarships -->
+        <div>
+          <div class="filter-panel">
+            <span class="filter-label">Sort by:</span>
+            <select id="sortBy" class="filter-select" onchange="applySort()">
+              <option value="score">Best Match</option>
+              <option value="name">Scholarship Name</option>
+              <option value="deadline">Provider</option>
+            </select>
+            <div style="flex: 1;"></div>
+            <span id="totalCount" class="filter-label">Showing all scholarships</span>
+          </div>
+
+          <div id="scholarships" class="sch-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Staff View -->
+    <div id="staffView" style="display: none;">
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab('overview')">Overview</button>
+        <button class="tab" onclick="switchTab('applications')">Applications</button>
+        <button class="tab" onclick="switchTab('analytics')">Analytics</button>
+        <button class="tab" onclick="switchTab('manage')">Manage Scholarships</button>
+      </div>
+
+      <!-- Overview Tab -->
+      <div id="overviewTab" class="tab-content active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);">📚</div>
+            <div class="stat-card-value">25</div>
+            <div class="stat-card-label">Active Scholarships</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--secondary);">👥</div>
+            <div class="stat-card-value">1,247</div>
+            <div class="stat-card-label">Total Applicants</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--accent);">✅</div>
+            <div class="stat-card-value">342</div>
+            <div class="stat-card-label">Approved This Month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-icon" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">⏳</div>
+            <div class="stat-card-value">89</div>
+            <div class="stat-card-label">Pending Review</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Recent Activity</div>
+          </div>
+          <div style="color: var(--text-secondary); padding: 2rem; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📊</div>
+            <div>Activity tracking and recent applications will appear here</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Applications Tab -->
+      <div id="applicationsTab" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Pending Applications</div>
+            <button class="btn btn-primary">Review All</button>
+          </div>
+          <div style="color: var(--text-secondary); padding: 2rem; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📝</div>
+            <div>Application management system coming soon</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Tab -->
+      <div id="analyticsTab" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Scholarship Analytics</div>
+          </div>
+          <div style="color: var(--text-secondary); padding: 2rem; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📈</div>
+            <div>Analytics dashboard with charts and insights coming soon</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manage Tab -->
+      <div id="manageTab" class="tab-content">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Manage Scholarships</div>
+            <button class="btn btn-success">+ Add New Scholarship</button>
+          </div>
+          
+          <div id="manageScholarships"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================
+       Scholarships Dataset
+       ========================= */
+    const scholarships = [
+      { id:1, title:"National Scholarship Portal (NSP)", provider:"Govt of India", url:"https://scholarships.gov.in/",
+        grade:["11","12","UG","PG","PhD"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:2, title:"Central Sector Scheme — Merit Cum Means", provider:"Ministry of Education", url:"https://scholarships.gov.in/",
+        grade:["UG"], minCgpa:60, incomeLimit:250000, communities:["all"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:3, title:"Post Matric Scholarship — SC/ST (Tamil Nadu)", provider:"TN Govt", url:"https://tnscholarship.gov.in",
+        grade:["11","12","UG","PG"], minCgpa:0, incomeLimit:250000, communities:["SC","ST"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:4, title:"Adi Dravidar Welfare — Post Matric", provider:"Adi Dravidar Welfare TN", url:"https://www.adidravidar.tn.gov.in",
+        grade:["11","12","UG","PG"], minCgpa:0, incomeLimit:250000, communities:["SC"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:5, title:"Dr. Ambedkar Post Matric Scholarship", provider:"TN Govt", url:"https://tnscholarship.gov.in",
+        grade:["11","12","UG","PG"], minCgpa:0, incomeLimit:200000, communities:["EBC","MBC","BC"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:6, title:"Moovalur Ramamirtham Ammaiyar Scheme", provider:"TN Govt", url:"https://www.tn.gov.in",
+        grade:["UG","PG"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"female", firstGradRequired:null, fields:["all"] },
+      { id:7, title:"AICTE Pragati Scholarship for Girls", provider:"AICTE", url:"https://www.aicte-india.org/pragati",
+        grade:["UG"], minCgpa:0, incomeLimit:800000, communities:["all"], gender:"female", firstGradRequired:null, fields:["engineering","management"] },
+      { id:8, title:"AICTE Saksham Scholarship (PwD)", provider:"AICTE", url:"https://www.aicte-india.org",
+        grade:["UG"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["engineering"] },
+      { id:9, title:"Prime Minister Scholarship Scheme — J&K", provider:"Govt of India", url:"https://scholarships.gov.in/",
+        grade:["UG"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:10, title:"Maulana Azad National Fellowship", provider:"Ministry of Minority Affairs", url:"https://manf-moma.gov.in/",
+        grade:["PG","PhD"], minCgpa:0, incomeLimit:0, communities:["Minority"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:11, title:"Post Matric Scholarship (Minorities)", provider:"Ministry of Minority Affairs", url:"https://scholarships.gov.in/",
+        grade:["11","12","UG","PG"], minCgpa:0, incomeLimit:200000, communities:["Minority"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:12, title:"Central Sector Scholarship for Top Class Education", provider:"Ministry of Education", url:"https://scholarships.gov.in/",
+        grade:["UG"], minCgpa:75, incomeLimit:350000, communities:["all"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:13, title:"PM Research Fellowship (PMRF)", provider:"Govt of India", url:"https://www.pmrf.in/",
+        grade:["PhD"], minCgpa:75, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["science","engineering"] },
+      { id:14, title:"J N Tata Endowment Loan Scholarship", provider:"J N Tata Endowment", url:"https://www.jntataendowment.org/",
+        grade:["PG","PhD"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:15, title:"Inlaks Foundation Scholarship", provider:"Inlaks Foundation", url:"https://www.inlaksfoundation.org/",
+        grade:["PG"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["arts","humanities"] },
+      { id:16, title:"ADB – Japan Scholarship Programme", provider:"ADB", url:"https://www.adb.org/work-with-us/careers/japan-scholarship-program",
+        grade:["PG"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["development","policy"] },
+      { id:17, title:"LIC Golden Jubilee Scholarship", provider:"LIC of India", url:"https://www.licindia.in",
+        grade:["UG"], minCgpa:0, incomeLimit:50000, communities:["all"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:18, title:"ONGC Scholarship", provider:"ONGC", url:"https://www.ongcindia.com",
+        grade:["UG"], minCgpa:0, incomeLimit:0, communities:["SC","ST"], gender:"any", firstGradRequired:null, fields:["engineering","science"] },
+      { id:19, title:"Sitaram Jindal Foundation Scholarship", provider:"Sitaram Jindal", url:"https://www.sitaramjindalfoundation.org",
+        grade:["11","12","UG"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:20, title:"IIT Bombay WINGS (Women in STEM)", provider:"IIT Bombay", url:"https://www.iitb.ac.in",
+        grade:["UG"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"female", firstGradRequired:null, fields:["engineering","science"] },
+      { id:21, title:"IIM Ahmedabad Scholarships", provider:"IIM Ahmedabad", url:"https://www.iima.ac.in",
+        grade:["PG"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["management","commerce"] },
+      { id:22, title:"SBI Asha Scholarship", provider:"SBI Foundation", url:"https://sbi.co.in",
+        grade:["11","12","UG"], minCgpa:0, incomeLimit:200000, communities:["all"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:23, title:"ICCR Scholarship (International)", provider:"ICCR", url:"https://www.iccr.gov.in",
+        grade:["UG","PG"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:24, title:"Vidyasaarathi Portal", provider:"NSDL e-Gov", url:"https://www.vidyasaarathi.co.in",
+        grade:["UG","PG"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["all"] },
+      { id:25, title:"Buddy4Study Platform", provider:"Buddy4Study", url:"https://www.buddy4study.com",
+        grade:["11","12","UG","PG"], minCgpa:0, incomeLimit:0, communities:["all"], gender:"any", firstGradRequired:null, fields:["all"] }
+    ];
+
+    /* =========================
+       View Switching
+       ========================= */
+    function switchView(view) {
+      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      if (view === 'student') {
+        document.getElementById('studentView').style.display = 'block';
+        document.getElementById('staffView').style.display = 'none';
+      } else {
+        document.getElementById('studentView').style.display = 'none';
+        document.getElementById('staffView').style.display = 'block';
+        renderManageScholarships();
+      }
+    }
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      event.target.classList.add('active');
+      
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      document.getElementById(tab + 'Tab').classList.add('active');
+    }
+
+    function showAbout() {
+      alert('EduScholar Portal v2.0\n\nAn intelligent scholarship matching platform powered by OCR document verification and AI-based matching algorithms.\n\nFeatures:\n✓ Smart OCR document scanning\n✓ AI-powered matching algorithm\n✓ Student and staff dashboards\n✓ Real-time document verification\n\nDeveloped for educational institutions and students.');
+    }
+
+    /* =========================
+       Scholarship Rendering
+       ========================= */
+    function renderList(list) {
+      const container = document.getElementById('scholarships');
+      container.innerHTML = '';
+      document.getElementById('totalCount').innerText = `Showing ${list.length} scholarship${list.length !== 1 ? 's' : ''}`;
+      
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🔍</div>
+            <div class="empty-state-title">No scholarships found</div>
+            <div class="empty-state-description">Try adjusting your profile or upload documents for better matches</div>
+          </div>
+        `;
+        return;
+      }
+
+      list.forEach(s => {
+        const matchClass = s.matchScore >= 75 ? 'high' : (s.matchScore >= 50 ? 'medium' : '');
+        const div = document.createElement('div');
+        div.className = 'scholarship-card';
+        div.innerHTML = `
+          <div class="scholarship-content">
+            <div class="scholarship-header">
+              <div>
+                <div class="scholarship-title">${escapeHtml(s.title)}</div>
+                <div class="scholarship-provider">
+                  <span>🏛️</span>
+                  <span>${escapeHtml(s.provider)}</span>
+                </div>
+              </div>
+            </div>
+            <div class="scholarship-meta">
+              ${s.grade.slice(0,3).map(g => `<span class="meta-tag">📚 ${g}</span>`).join('')}
+              ${s.fields[0] !== 'all' ? `<span class="meta-tag">🎯 ${s.fields[0]}</span>` : ''}
+              ${s.gender !== 'any' ? `<span class="meta-tag">👤 ${s.gender}</span>` : ''}
+              ${s.incomeLimit ? `<span class="meta-tag">💰 Income ≤ ₹${(s.incomeLimit/100000).toFixed(1)}L</span>` : ''}
+            </div>
+          </div>
+          <div class="scholarship-actions">
+            <div class="match-badge ${matchClass}">${s.matchScore || 0}%</div>
+            <button class="btn btn-primary" onclick="window.open('${s.url}','_blank')">
+              Apply Now →
+            </button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderManageScholarships() {
+      const container = document.getElementById('manageScholarships');
+      container.innerHTML = '';
+      
+      scholarships.forEach(s => {
+        const div = document.createElement('div');
+        div.className = 'scholarship-card';
+        div.style.marginTop = '1rem';
+        div.innerHTML = `
+          <div class="scholarship-content">
+            <div class="scholarship-title">${escapeHtml(s.title)}</div>
+            <div class="scholarship-provider">${escapeHtml(s.provider)}</div>
+            <div class="scholarship-meta" style="margin-top: 0.75rem;">
+              <span class="meta-tag">Grades: ${s.grade.join(', ')}</span>
+              <span class="meta-tag">Min CGPA: ${s.minCgpa || 'None'}</span>
+              <span class="meta-tag">Income Limit: ${s.incomeLimit ? '₹' + s.incomeLimit.toLocaleString() : 'No Limit'}</span>
+            </div>
+          </div>
+          <div class="scholarship-actions">
+            <button class="btn btn-secondary" style="margin-bottom: 0.5rem;">✏️ Edit</button>
+            <button class="btn btn-secondary" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: #ef4444;">🗑️ Delete</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    /* =========================
+       File Handling
+       ========================= */
+    function handleFileSelect(input, type) {
+      const file = input.files[0];
+      const statusEl = document.getElementById(type + 'Status');
+      
+      if (file) {
+        const fileSize = (file.size / 1024 / 1024).toFixed(2);
+        statusEl.innerHTML = `<span style="color: var(--secondary);">✓ ${file.name} (${fileSize} MB)</span>`;
+        input.parentElement.classList.add('active');
+      }
+    }
+
+    /* =========================
+       OCR Functions
+       ========================= */
+    async function extractTextFromFile(file) {
+      if (!file) return "";
+      
+      const fileType = file.type || '';
+      
+      if (fileType === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 2.0 });
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.floor(viewport.width);
+          canvas.height = Math.floor(viewport.height);
+          const ctx = canvas.getContext('2d');
+          await page.render({ canvasContext: ctx, viewport }).promise;
+          const { data: { text } } = await Tesseract.recognize(canvas, 'eng');
+          return text || '';
+        } catch (err) {
+          console.error('PDF OCR error', err);
+          return '';
+        }
+      }
+      
+      try {
+        const { data: { text } } = await Tesseract.recognize(file, 'eng', { logger: m => {} });
+        return text || '';
+      } catch (err) {
+        console.error('Image OCR error', err);
+        return '';
+      }
+    }
+
+    function detectCommunityFromText(text) {
+      if (!text) return { community: null, confidence: 0 };
+      const t = text.toLowerCase();
+      const keywords = [
+        { key: 'SC', words: ['scheduled caste', 'sc', 'adi dravidar', 'adidravidar'] },
+        { key: 'ST', words: ['scheduled tribe', 'st'] },
+        { key: 'BC', words: ['backward class', 'bc'] },
+        { key: 'MBC', words: ['most backward class', 'mbc', 'm.b.c'] },
+        { key: 'EBC', words: ['economically backward class', 'ebc', 'e.b.c'] },
+        { key: 'Minority', words: ['minority', 'muslim', 'christian', 'sikh', 'jain', 'parsi', 'buddhist'] },
+        { key: 'General', words: ['general', 'open category'] }
+      ];
+      
+      let detected = null, score = 0;
+      for (const group of keywords) {
+        for (const w of group.words) {
+          if (t.includes(w)) {
+            detected = group.key;
+            score += 1;
+            break;
+          }
+        }
+      }
+      return { community: detected, confidence: score };
+    }
+
+    function detectIncomeFromText(text) {
+      if (!text) return null;
+      const cands = text.match(/\d{4,7}/g);
+      if (!cands) return null;
+      const nums = cands.map(x => parseInt(x, 10));
+      return Math.max(...nums);
+    }
+
+    /* =========================
+       Main Scan & Match Function
+       ========================= */
+    async function scanAndMatch() {
+      // Show detection box
+      document.getElementById('detectionResults').style.display = 'block';
+      document.getElementById('detectedCommunity').innerHTML = '<span class="loading"></span>';
+      document.getElementById('detectedIncome').innerHTML = '<span class="loading"></span>';
+      document.getElementById('detectedFirstGrad').innerHTML = '<span class="loading"></span>';
+
+      const profile = {
+        name: document.getElementById('name').value.trim(),
+        grade: document.getElementById('grade').value,
+        cgpa: Number(document.getElementById('cgpa').value) || 0,
+        field: document.getElementById('field').value,
+        gender: document.getElementById('gender').value,
+        incomeBucket: document.getElementById('income').value,
+        firstGradSelf: document.getElementById('firstGrad').value
+      };
+
+      const fAadhaar = document.getElementById('aadhaarFile').files[0];
+      const fIncome = document.getElementById('incomeFile').files[0];
+      const fCommunity = document.getElementById('communityFile').files[0];
+
+      const [tA, tI, tC] = await Promise.all([
+        extractTextFromFile(fAadhaar),
+        extractTextFromFile(fIncome),
+        extractTextFromFile(fCommunity)
+      ]);
+
+      const combined = [tA || '', tI || '', tC || ''].join('\n').toLowerCase();
+
+      const commDetection = detectCommunityFromText(combined);
+      const detectedCommunity = commDetection.community || 'Not detected';
+      document.getElementById('detectedCommunity').innerText = detectedCommunity;
+
+      const incomeDetected = detectIncomeFromText(combined);
+      document.getElementById('detectedIncome').innerText = incomeDetected ? `₹${incomeDetected.toLocaleString()}` : 'Not detected';
+
+      let firstGradDetected = false;
+      if (combined.includes('first graduate') || combined.includes('first generation') || combined.includes('first-generation')) {
+        firstGradDetected = true;
+      }
+      document.getElementById('detectedFirstGrad').innerText = firstGradDetected ? 'Yes' : 'No';
+
+      const results = scholarships.map(s => {
+        let score = 0;
+        let maxScore = 0;
+
+        if (profile.grade) {
+          maxScore += 20;
+          if (s.grade.includes(profile.grade)) score += 20;
+        }
+
+        if (profile.cgpa) {
+          maxScore += 15;
+          if (s.minCgpa && profile.cgpa >= s.minCgpa) score += 15;
+          else if (!s.minCgpa) score += 10;
+        }
+
+        if (profile.field) {
+          maxScore += 10;
+          if (s.fields.includes('all') || s.fields.includes(profile.field)) score += 10;
+        }
+
+        if (profile.gender) {
+          maxScore += 5;
+          if (s.gender === 'any' || s.gender === profile.gender) score += 5;
+        }
+
+        maxScore += 20;
+        if (incomeDetected) {
+          if (s.incomeLimit === 0) score += 10;
+          else if (incomeDetected <= s.incomeLimit) score += 20;
+        } else if (profile.incomeBucket) {
+          const bucketVal = bucketToValue(profile.incomeBucket);
+          if (s.incomeLimit === 0) score += 10;
+          else if (bucketVal <= s.incomeLimit) score += 15;
+        } else {
+          score += 5;
+        }
+
+        maxScore += 20;
+        if (s.communities.includes('all')) {
+          score += 10;
+        } else {
+          if (detectedCommunity !== 'Not detected') {
+            if (s.communities.map(c => c.toLowerCase()).includes(detectedCommunity.toLowerCase())) score += 20;
+          } else if (profile.firstGradSelf) {
+            score += 5;
+          }
+        }
+
+        maxScore += 10;
+        if (s.firstGradRequired === true) {
+          if (profile.firstGradSelf === 'yes' || firstGradDetected) score += 10;
+        } else {
+          score += 5;
+        }
+
+        const perc = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
+        return { ...s, matchScore: perc };
+      });
+
+      results.sort((a, b) => b.matchScore - a.matchScore);
+      renderList(results);
+
+      // Show success message
+      const alert = document.createElement('div');
+      alert.className = 'alert alert-success';
+      alert.innerHTML = '<strong>✓ Scan Complete!</strong> Documents processed successfully. Showing best matches below.';
+      alert.style.position = 'fixed';
+      alert.style.top = '90px';
+      alert.style.right = '20px';
+      alert.style.zIndex = '1000';
+      alert.style.maxWidth = '400px';
+      alert.style.boxShadow = 'var(--shadow-xl)';
+      document.body.appendChild(alert);
+      setTimeout(() => alert.remove(), 5000);
+    }
+
+    function bucketToValue(bucket) {
+      if (!bucket) return 1e9;
+      if (bucket === 'below50000') return 40000;
+      if (bucket === '50000-100000') return 75000;
+      if (bucket === '100000-500000') return 300000;
+      if (bucket === 'above500000') return 10000000;
+      return 1e9;
+    }
+
+    function resetAll() {
+      ['name', 'grade', 'cgpa', 'field', 'gender', 'income', 'firstGrad'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      
+      ['aadhaarFile', 'incomeFile', 'communityFile'].forEach(id => {
+        const f = document.getElementById(id);
+        if (f) f.value = '';
+      });
+      
+      ['aadhaarStatus', 'incomeStatus', 'communityStatus'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.innerHTML = '';
+      });
+      
+      document.querySelectorAll('.file-upload').forEach(el => el.classList.remove('active'));
+      document.getElementById('detectionResults').style.display = 'none';
+      
+      scholarships.forEach(s => s.matchScore = 0);
+      renderList(scholarships);
+    }
+
+    function applySort() {
+      const v = document.getElementById('sortBy').value;
+      const container = document.getElementById('scholarships');
+      const cards = Array.from(container.children);
+      
+      if (v === 'name') {
+        cards.sort((a, b) => a.querySelector('.scholarship-title').innerText.localeCompare(b.querySelector('.scholarship-title').innerText));
+      } else if (v === 'deadline') {
+        cards.sort((a, b) => a.querySelector('.scholarship-provider').innerText.localeCompare(b.querySelector('.scholarship-provider').innerText));
+      } else {
+        cards.sort((a, b) => {
+          const av = parseInt(a.querySelector('.match-badge').innerText) || 0;
+          const bv = parseInt(b.querySelector('.match-badge').innerText) || 0;
+          return bv - av;
+        });
+      }
+      
+      container.innerHTML = '';
+      cards.forEach(c => container.appendChild(c));
+    }
+
+    /* =========================
+       Initialize
+       ========================= */
+    window.onload = () => {
+      scholarships.forEach(s => s.matchScore = 0);
+      renderList(scholarships);
+    };
+  </script>
+</body>
+</html>
